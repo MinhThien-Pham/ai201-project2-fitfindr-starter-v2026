@@ -59,24 +59,24 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Searches the listings for items matching the requested description, optional size, and optional maximum price.
+- **Inputs:** `description` (str), `size` (str | None), `max_price` (float | None). Size matching is case-insensitive and uses complete size values/tokens, so `M` can match `S/M` but should not match `XL` or `US 9`.
+- **Returns:** A list of matching listing dictionaries, best match first, with fields including `id`, `title`, `description`, `category`, `style_tags`, `size`, `condition`, `price`, `colors`, `brand`, and `platform`.
+- **When it has nothing:** Returns an empty list `[]`.
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Suggests one or two outfits using the selected listing and the user's wardrobe.
+- **Inputs:** `new_item` (dict), `wardrobe` (dict).
+- **Returns:** A non-empty string containing outfit suggestions.
+- **When it has nothing:** If the wardrobe has no items, returns general styling advice for the new item instead of failing.
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Creates a short social-media-style caption for the selected item and outfit.
+- **Inputs:** `outfit` (str), `new_item` (dict).
+- **Returns:** A two-to-four sentence caption that mentions the item, price, platform, and outfit vibe.
+- **When it has nothing:** If `outfit` is empty or only whitespace, returns a descriptive message instead of raising an error.
 
 ---
 
@@ -93,7 +93,7 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If `search_listings` returns an empty list, put a message in the session telling the user to change the description, size, or maximum price, then stop. Otherwise, select the first result and continue to `suggest_outfit`, then `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
 
