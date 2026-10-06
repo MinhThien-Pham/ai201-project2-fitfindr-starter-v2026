@@ -41,6 +41,13 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
+A user types what they want, like `vintage graphic tee under $30, size M`.
+FitFindr pulls a description, a size and a price ceiling out of it, then
+searches 40 secondhand listings from depop, thredUp and poshmark. It takes the
+best match and asks the model for two outfits that pair it with clothes the
+user already owns. The user gets back the listing, the outfit ideas and a
+short caption ready to post. If nothing matches, it stops and says what to
+change.
 
 
 ---
@@ -97,9 +104,9 @@
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which --> String splitting. The query is split into words. `under $30`, `below $30`, `max $30` or a bare `$30` sets `max_price`. `size M` sets `size`. The remaining words, minus filler like "looking for a", become `description`.
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** <!-- which fields, in what order --> `query` → `parsed` (`description`, `size`, `max_price`) → `search_results` → `selected_item` (`search_results[0]`) → `outfit_suggestion` → `fit_card`. Each tool reads its inputs back out of the session. `session["steps"]` records every tool call in order, including the `item_id` that `suggest_outfit` and `create_fit_card` each received.
 
 ---
 
@@ -113,25 +120,34 @@
 **One full query**
 
 ```
-$ python app.py ask '...'
+$ python app.py ask 'vintage graphic tee under $30, size M'
 
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   Outfit 1: Pair the Y2K Baby Tee — Butterfly Print with the Baggy straight-leg jeans, dark wash for a classic noughties contrast. Complete the look with the Chunky white sneakers and the Black crossbody bag for an effortless everyday ensemble.
+
+Outfit 2: Layer the Y2K Baby Tee — Butterfly Print underneath the Vintage black denim jacket for an edgy vintage vibe. Pair them with the Wide-leg khaki trousers and the Black combat boots to anchor the pastel graphic top with structured pieces.
+
+  Fit card: Found the ultimate Y2K baby tee with the cutest butterfly print for just $18 on Depop. I'm obsessed with pairing it with baggy dark-wash jeans and chunky sneakers for that effortless noughties look. Grab it before I change my mind!
 ```
 
 **The three tools, tested one at a time**
 
 ```
 $ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
-
+[{'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'description': 'Super cute early 2000s baby tee with butterfly graphic. Fitted crop length. Tag says medium but fits like a small.', 'category': 'tops', 'style_tags': ['y2k', 'vintage', 'graphic tee', 'cottagecore'], 'size': 'S/M', 'condition': 'excellent', 'price': 18.0, 'colors': ['white', 'pink', 'purple'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_033', 'title': 'Vintage Band Tee — Faded Grey', 'description': 'Faded grey band-style tee with distressed graphic. Crew neck. Fits boxy. Well-loved but no holes or major damage.', 'category': 'tops', 'style_tags': ['vintage', 'grunge', 'band tee', 'graphic tee', 'streetwear'], 'size': 'L', 'condition': 'fair', 'price': 19.0, 'colors': ['grey', 'charcoal'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_006', 'title': 'Graphic Tee — 2003 Tour Bootleg Style', 'description': 'Vintage-style bootleg tee with faded graphic. Slightly boxy fit. 100% cotton, soft and worn-in.', 'category': 'tops', 'style_tags': ['graphic tee', 'vintage', 'grunge', 'streetwear', 'band tee'], 'size': 'L', 'condition': 'good', 'price': 24.0, 'colors': ['black'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_017', 'title': 'Mesh Long-Sleeve Top — Black', 'description': 'Sheer black mesh long-sleeve. Great for layering under a graphic tee or over a bralette. Stretchy material, fits true to size.', 'category': 'tops', 'style_tags': ['y2k', 'grunge', 'goth', 'layering'], 'size': 'S/M', 'condition': 'excellent', 'price': 15.0, 'colors': ['black'], 'brand': None, 'platform': 'depop'}]
 ```
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+Outfit 1: Pair the Vintage Levi's 501 Jeans — Medium Wash with the White ribbed tank top and the Chunky white sneakers for a classic, effortless look. Finish the outfit by adding the Brown leather belt to tie the ensemble together.
 
+Outfit 2: Combine the Vintage Levi's 501 Jeans — Medium Wash with the Oversized grey crewneck sweatshirt and the Black combat boots for an edgy, streetwear-inspired vibe. Accessorize with the Black crossbody bag to complete the look.
 ```
 
 ```
-$ python -c "from tools import create_fit_card; ..."
-
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+Scored these vintage Levi’s 501 jeans on Depop for only $38 and they fit like an absolute dream. Nothing beats the medium wash for everyday wear. I’m living in these this fall with crisp white sneakers and a chunky oversized sweater.
 ```
 
 ---
