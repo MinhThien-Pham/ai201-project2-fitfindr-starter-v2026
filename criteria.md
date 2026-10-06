@@ -28,6 +28,10 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
 <!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
+My search is a plain keyword match, and the query is split up word by word, so
+some phrasings will miss a listing that is really there. Two of the three
+tools also call the model, so a rate limit or a failed call can stop an
+otherwise good run.
 
 ---
 
@@ -39,6 +43,9 @@ Given a query that matches no listings, the agent stops before calling
 **Why this target:**
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
+This path never reaches the model. Parsing, the search and the empty-list check
+are plain code, so the same query gives the same result every time. Any miss is
+a bug in the branch, not randomness.
 
 ---
 
@@ -54,11 +61,16 @@ Given a query that matches no listings, the agent stops before calling
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
-
+Given a query that matches at least one listing, the finished session shows
+the same listing `id` in three places: `session["search_results"][0]`,
+`session["selected_item"]`, and the `item_id` recorded in `session["steps"]`
+for both the `suggest_outfit` and the `create_fit_card` calls. The user types
+the query once. This holds in 5 of 5 tries.
 
 **Why this target:**
-
-
+Passing the item along is plain dictionary code with no model involved. If
+the ids differ even once, something overwrote the session or a tool got the
+wrong value. That is a bug, so the target is 5 of 5.
 
 ---
 
@@ -75,11 +87,20 @@ Given a query that matches no listings, the agent stops before calling
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
 
+For 5 runs of `vintage graphic tee under $30` with the cache off, at least 4
+of the 5 fit cards meet all of these:
 
+- 2 to 4 sentences and at most 70 words.
+- Contains the selected item's price as `$` and the number (e.g. `$18`).
+- Contains the selected item's platform name.
+
+Across the 5 cards, no two have the same first sentence.
 
 **Why this target:**
-
-
+The words are supposed to change (TEMPERATURE is 0.9), so I check facts and
+length, not wording. The prompt asks for the price and platform, but the model
+sometimes writes "18 bucks" or drops the platform, so I allow one miss in 5. A
+repeated first sentence means the caption is acting like a template.
 
 ---
 
@@ -92,10 +113,19 @@ Given a query that matches no listings, the agent stops before calling
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
-
+For each of these 5 queries — `vintage graphic tee under $30`,
+`90s track jacket in size M`, `platform sneakers size 8`,
+`denim jacket under $50`, `vintage tee size S under $20` —
+`session["parsed"]` holds the size and max price that were typed (None when
+none was typed). Every listing in `session["search_results"]` has
+`price <= max_price`, and its size contains the requested size as a whole
+token (`S` matches `S/M` but never `US 9` or `XS`). Target: 5 of 5 queries.
 
 **Why this target:**
-
+A result outside the user's budget or size is worse than no result, because
+the agent builds an outfit around something they can't buy. Parsing and
+filtering are deterministic, so anything below 5 of 5 is a bug. Query 5
+checks the `"s" in "us 9"` trap the starter warns about.
 
 
 ---
