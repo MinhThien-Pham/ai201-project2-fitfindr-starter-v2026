@@ -44,6 +44,7 @@ def new_session(query: str, wardrobe: dict) -> dict:
         "outfit_suggestion": None,   # what suggest_outfit returned
         "fit_card": None,            # what create_fit_card returned
         "error": None,               # set when the run ended early
+        "steps": [],                 # each tool call, in order, with the item id it got
     }
 
 
@@ -107,8 +108,78 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    # Each pass looks at the session and takes the first step still missing.
+    count = 0
+    while session["error"] is None and session["fit_card"] is None:
+        count += 1
+        trace.check_iterations(count)
+
+        if not session["parsed"]:
+            # String splitting: "under $30" / "$30" → max_price, "size M" → size,
+            # everything else (minus filler words) → description.
+            words = session["query"].replace(",", " ").split()
+            description, size, max_price = [], None, None
+            i = 0
+            while i < len(words):
+                word = words[i].lower()
+                after = words[i + 1] if i + 1 < len(words) else ""
+                if word in ("under", "below", "max") and after.lstrip("$").replace(".", "", 1).isdigit():
+                    max_price = float(after.lstrip("$"))
+                    i += 2
+                elif word == "size" and after:
+                    size = after.upper()
+                    i += 2
+                elif word.startswith("$") and word[1:].replace(".", "", 1).isdigit():
+                    max_price = float(word[1:])
+                    i += 1
+                else:
+                    if word not in ("looking", "for", "a", "an", "in", "i", "want", "need"):
+                        description.append(words[i])
+                    i += 1
+            session["parsed"] = {
+                "description": " ".join(description),
+                "size": size,
+                "max_price": max_price,
+            }
+
+        elif not session["steps"]:
+            parsed = session["parsed"]
+            session["search_results"] = search_listings(
+                parsed["description"], parsed["size"], parsed["max_price"]
+            )
+            session["steps"].append({
+                "tool": "search_listings",
+                "inputs": dict(parsed),
+                "result_count": len(session["search_results"]),
+            })
+
+            # THE BRANCH: nothing came back, so say what to change and stop.
+            if not session["search_results"]:
+                tips = ["use fewer or different words for the item (like 'graphic tee' or 'denim jacket')"]
+                if parsed["size"]:
+                    tips.append(f"try a size other than {parsed['size']}, or leave the size out")
+                if parsed["max_price"] is not None:
+                    tips.append(f"raise your max price above ${parsed['max_price']:g}")
+                session["error"] = (
+                    f"No listings matched '{parsed['description']}'"
+                    + (f" in size {parsed['size']}" if parsed["size"] else "")
+                    + (f" under ${parsed['max_price']:g}" if parsed["max_price"] is not None else "")
+                    + ". To find something: " + "; or ".join(tips) + "."
+                )
+
+        elif session["selected_item"] is None:
+            session["selected_item"] = session["search_results"][0]
+
+        elif session["outfit_suggestion"] is None:
+            item = session["selected_item"]
+            session["outfit_suggestion"] = suggest_outfit(item, session["wardrobe"])
+            session["steps"].append({"tool": "suggest_outfit", "item_id": item["id"]})
+
+        else:
+            item = session["selected_item"]
+            session["fit_card"] = create_fit_card(session["outfit_suggestion"], item)
+            session["steps"].append({"tool": "create_fit_card", "item_id": item["id"]})
+
     return session
 
 
