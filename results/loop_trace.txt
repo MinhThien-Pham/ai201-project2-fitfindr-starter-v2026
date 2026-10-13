@@ -1,0 +1,48 @@
+$ python app.py ask 'vintage graphic tee under $30' --trace
+
+[1] parse query
+      in:  vintage graphic tee under $30
+      out: {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+      →    Use the parsed filters for search.
+[2] search_listings (via MCP)
+      in:  {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+      out: 6 items: Y2K Baby Tee — Butterfly Print, Vintage Band Tee — Faded Grey, Graphic Tee — 2003 Tour Bootleg Style … +3 more
+[3] select first result
+      out: Y2K Baby Tee — Butterfly Print ($18.0, depop)
+      →    Keep lst_002 in the session for both model tools.
+[4] suggest_outfit
+      in:  {'new_item': {'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'description': 'Super cute early 2000s baby tee with butterfly graphic. Fitted crop length. Tag says medium but fits like a small.', 'category': 'tops', 'style_tags': ['y2k', 'vintage', 'graphic tee', 'cottagecore'], 'size': 'S/M', 'condition': 'excellent', 'price': 18.0, 'colors': ['white', 'pink', 'purple'], 'brand': None, 'platform': 'depop'}, 'wardrobe': {'items': [{'id': 'w_001', 'name': 'Baggy straight-leg jeans, dark wash', 'category': 'bottoms', 'colors': ['dark blue', 'indigo'], 'style_tags': ['denim', 'streetwear', 'baggy'], 'notes': 'High-waisted, sits above the hip'}, {'id': 'w_002', 'name': 'Wide-leg khaki trousers', 'category': 'bottoms', 'colors': ['khaki', 'tan'], 'style_tags': ['earth tones', 'minimal', 'wide-leg'], 'notes': None}, {'id': 'w_003', 'name': 'White ribbed tank top', 'category': 'tops', 'colors': ['white'], 'style_tags': ['basics', 'minimal', 'fitted'], 'notes': 'Goes with everything'}, {'id': 'w_004', 'name': 'Oversized grey crewneck sweatshirt', 'category': 'tops', 'colors': ['grey', 'charcoal'], 'style_tags': ['oversized', 'basics', 'cozy'], 'notes': 'Really oversized — drops below the hip'}, {'id': 'w_005', 'name': 'Black cropped zip hoodie', 'category': 'tops', 'colors': ['black'], 'style_tags': ['athletic', 'streetwear', 'cropped'], 'notes': None}, {'id': 'w_006', 'name': 'Vintage black denim jacket', 'category': 'outerwear', 'colors': ['black'], 'style_tags': ['denim', 'vintage', 'classic'], 'notes': 'Slightly cropped'}, {'id': 'w_007', 'name': 'Chunky white sneakers', 'category': 'shoes', 'colors': ['white'], 'style_tags': ['sneakers', 'chunky', 'streetwear'], 'notes': None}, {'id': 'w_008', 'name': 'Black combat boots', 'category': 'shoes', 'colors': ['black'], 'style_tags': ['boots', 'grunge', 'classic'], 'notes': 'Lace-up, mid-ankle height'}, {'id': 'w_009', 'name': 'Brown leather belt', 'category': 'accessories', 'colors': ['brown'], 'style_tags': ['classic', 'earth tones', 'accessories'], 'notes': None}, {'id': 'w_010', 'name': 'Black crossbody bag', 'category': 'accessories', 'colors': ['black'], 'style_tags': ['minimal', 'accessories', 'everyday'], 'notes': None}]}}
+      out: Outfit 1: Pair the Y2K Baby Tee — Butterfly Print with the Baggy straight-leg jeans, dark wash for a classic noughties contrast. Complete the look with the Chunky white sneakers and the Black crossbody bag for an effortless everyday ensemble.
+
+Outfit 2: Layer the Y2K Baby Tee — Butterfly Print underneath the Vintage black denim jacket for an edgy vintage vibe. Pair them with the Wide-leg khaki trousers and the Black combat boots to anchor the pastel graphic top with structured pieces.
+      →    Pass the outfit and the same item to create_fit_card.
+[5] create_fit_card
+      in:  {'outfit': 'Outfit 1: Pair the Y2K Baby Tee — Butterfly Print with the Baggy straight-leg jeans, dark wash for a classic noughties contrast. Complete the look with the Chunky white sneakers and the Black crossbody bag for an effortless everyday ensemble.\n\nOutfit 2: Layer the Y2K Baby Tee — Butterfly Print underneath the Vintage black denim jacket for an edgy vintage vibe. Pair them with the Wide-leg khaki trousers and the Black combat boots to anchor the pastel graphic top with structured pieces.', 'new_item': {'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'description': 'Super cute early 2000s baby tee with butterfly graphic. Fitted crop length. Tag says medium but fits like a small.', 'category': 'tops', 'style_tags': ['y2k', 'vintage', 'graphic tee', 'cottagecore'], 'size': 'S/M', 'condition': 'excellent', 'price': 18.0, 'colors': ['white', 'pink', 'purple'], 'brand': None, 'platform': 'depop'}}
+      out: Tuck this Y2K baby tee into baggy dark-wash denim for that classic noughties contrast. I’m listing this butterfly print piece on Depop for $18. Grab it before someone else does!
+      →    All three tools finished; return the session.
+
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   Outfit 1: Pair the Y2K Baby Tee — Butterfly Print with the Baggy straight-leg jeans, dark wash for a classic noughties contrast. Complete the look with the Chunky white sneakers and the Black crossbody bag for an effortless everyday ensemble.
+
+Outfit 2: Layer the Y2K Baby Tee — Butterfly Print underneath the Vintage black denim jacket for an edgy vintage vibe. Pair them with the Wide-leg khaki trousers and the Black combat boots to anchor the pastel graphic top with structured pieces.
+
+  Fit card: Tuck this Y2K baby tee into baggy dark-wash denim for that classic noughties contrast. I’m listing this butterfly print piece on Depop for $18. Grab it before someone else does!
+
+1 model calls this session, 1 served from cache, 234 prompt + 44 output tokens
+$ python app.py ask 'designer ballgown size XXS under $5' --trace
+
+[1] parse query
+      in:  designer ballgown size XXS under $5
+      out: {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      →    Use the parsed filters for search.
+[2] search_listings (via MCP)
+      in:  {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      out: [] (empty)
+[3] empty-search branch
+      out: No listings matched 'designer ballgown' in size XXS under $5. To find something: use fewer or different words for the item (like 'graphic tee' or 'denim jacket'); or try a size other than XXS, or leave the size out; or raise your max price above $5.
+      →    No item to pass on; stop before suggest_outfit.
+
+  No listings matched 'designer ballgown' in size XXS under $5. To find something: use fewer or different words for the item (like 'graphic tee' or 'denim jacket'); or try a size other than XXS, or leave the size out; or raise your max price above $5.
+
+0 model calls this session

@@ -182,132 +182,317 @@ Scored these vintage Levi’s 501 jeans on Depop for only $38 and they fit like 
 
 ## Run Log — Before
 
-<!-- Five criteria, five tries each, in this exact format.
+I kept the five criteria and targets from Unit 3. I ran `python run_eval.py --label before` with cache off and temperature 0.9. The log recorded 80 real model calls. I used the same data, model, and key.
 
-     Five, because your criteria are written out of five. Mark each try PASS
-     or FAIL, count the passes, and read that count against your target — a
-     row targeting 4 of 5 with three PASS cells is MISSED (3/5).
+I ran 45 full agent attempts: five each for criteria 1–4, plus five for each of the five queries in criterion 5. In row 5, each Try column passes only when all five queries keep the typed filters and every returned listing respects them. That gives me 25 checks for criterion 5.
 
-     `python run_eval.py --label before` runs everything and writes the table
-     into results/. Paste it here and fill in the verdicts. -->
+For criterion 4, I counted sentences at `.`, `!`, or `?` followed by whitespace, and counted words by whitespace. I checked the dollar price and platform without caring about capitalization. I marked every card sharing an opening sentence FAIL. The original rule also requires no repeated opening across all five cards; four valid cards alone cannot excuse a duplicate.
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Impossible query stops before suggest_outfit | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Same item reaches both model tools | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card facts, length, and different openings | 4 of 5 | PASS | FAIL | FAIL | FAIL | FAIL | MISSED (1/5) |
+| 5. All five queries keep the typed size and budget | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Real output from one try**, pasted as text, naming the file and function
-that produced it:
+I saved every session and trace in [run_2026-10-13_1952_before.json](results/run_2026-10-13_1952_before.json) and the readable output in [run_2026-10-13_1952_before.md](results/run_2026-10-13_1952_before.md). The values below come from those sessions. The captions come from `tools.py::create_fit_card`, and the search results come from `tools.py::search_listings` through MCP.
 
+**Criterion 1, try 1** — `agent.py::run_agent`
+
+Query: `vintage graphic tee under $30`
+
+```text
+Tool order: ['search_listings', 'suggest_outfit', 'create_fit_card']
+Obsessed with this Y2K butterfly baby tee I just scored on Depop for only $18. It looks so good for casual street style with baggy dark wash jeans and chunky white sneakers. Grab it before I change my mind and keep it for myself!
 ```
 
+**Criterion 2, try 1** — `agent.py::run_agent`
+
+Query: `designer ballgown size XXS under $5`
+
+```text
+No listings matched 'designer ballgown' in size XXS under $5. To find something: use fewer or different words for the item (like 'graphic tee' or 'denim jacket'); or try a size other than XXS, or leave the size out; or raise your max price above $5.
+Tool order: ['search_listings']
+fit_card: None
+```
+
+**Criterion 3, try 1** — `agent.py::run_agent`
+
+Query: `vintage graphic tee under $30`
+
+```text
+search_results[0].id: lst_002
+selected_item.id: lst_002
+suggest_outfit item_id: lst_002
+create_fit_card item_id: lst_002
+```
+
+**Criterion 4, try 1** — `agent.py::run_agent`
+
+Query: `vintage graphic tee under $30`
+
+```text
+Found this absolute gem of a Y2K baby tee with the cutest butterfly print for just $18 on Depop. I’m obsessed! Honestly can't wait to style it with baggy dark-wash straight-leg jeans and chunky white sneakers for the ultimate noughties casual silhouette. Check out my shop before I change my mind and keep it.
+```
+
+**Criterion 5, try 1** — `agent.py::run_agent`
+
+Query: `vintage graphic tee under $30`
+
+```text
+vintage graphic tee under $30
+parsed: {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+search_results (id, size, price): [('lst_002', 'S/M', 18.0), ('lst_033', 'L', 19.0), ('lst_006', 'L', 24.0), ('lst_015', 'L', 26.0), ('lst_012', 'XL (fits oversized)', 20.0), ('lst_017', 'S/M', 15.0)]
+90s track jacket in size M
+parsed: {'description': '90s track jacket', 'size': 'M', 'max_price': None}
+search_results (id, size, price): [('lst_004', 'M', 45.0), ('lst_022', 'M', 75.0)]
+platform sneakers size 8
+parsed: {'description': 'platform sneakers', 'size': '8', 'max_price': None}
+search_results (id, size, price): [('lst_019', 'US 8', 48.0)]
+denim jacket under $50
+parsed: {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+search_results (id, size, price): [('lst_007', 'S', 42.0)]
+vintage tee size S under $20
+parsed: {'description': 'vintage tee', 'size': 'S', 'max_price': 20.0}
+search_results (id, size, price): [('lst_002', 'S/M', 18.0)]
 ```
 
 ---
 
 ## Verdicts and Diagnoses
 
-<!-- MET or MISSED per criterion against LAST UNIT's target, plus a sentence on
-     how you decided.
-
-     Then, for every miss: which of the four places it happened — a tool, the
-     loop's branch, the session, or the model's output — AND the mechanism.
-
-     Not a diagnosis:  "The fit card was bad."
-     A diagnosis:      "The fit card criterion missed on 2 of 5 items. Both had
-                        an empty brand field. My prompt puts the brand in the
-                        first sentence, so the card opened with a blank and read
-                        like a fragment. The tool worked; the prompt assumed a
-                        field that isn't always there."
-
-     Look for a pattern. Three misses on the same tool is one problem, not
-     three. -->
-
-| # | Criterion | Target | Verdict | How I decided |
-|---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| # | Target | Verdict | How I decided |
+|---|---|---|---|
+| 1 | 4 of 5 | MET (5/5) | I checked the three tool names in order and a non-empty fit card. |
+| 2 | 5 of 5 | MET (5/5) | I checked that only search ran and the message named what to change. |
+| 3 | 5 of 5 | MET (5/5) | I compared the first result id, selected item id, and both recorded tool input ids. |
+| 4 | 4 of 5 | MISSED (1/5) | I checked the facts and length, then compared all five opening sentences. |
+| 5 | 5 of 5 | MET (5/5) | I checked the parsed size and price and every returned listing for all five queries in each try. |
 
 **Diagnoses**
 
+I missed criterion 4. The problem is the model output from `tools.py::create_fit_card`, at trace step 5 (the third tool). The price, platform, word count, and sentence count passed in all five cards, but tries 2 and 4 had the same first sentence, and tries 3 and 5 had another shared first sentence. Only try 1 had a unique opening. My prompt asked for a real post but gave no guidance about the opening. The model kept using the same “Found this absolute dream” wording. Search, the branch, and the session did not cause this miss.
 
+I saw one pattern, not four separate bugs: repeated openings from the same model tool. I kept the original target.
+
+| Try | Sentences | Words | Price | Platform | Unique opening |
+|---|---|---|---|---|---|
+| 1 | 4 | 54 | True | True | True |
+| 2 | 2 | 38 | True | True | False |
+| 3 | 2 | 38 | True | True | False |
+| 4 | 2 | 44 | True | True | False |
+| 5 | 3 | 49 | True | True | False |
+
+I compared these actual opening sentences:
+
+```text
+Try 1: Found this absolute gem of a Y2K baby tee with the cutest butterfly print for just $18 on Depop.
+Try 2: Found this absolute dream of a Y2K baby tee with the cutest butterfly print on Depop for just $18!
+Try 3: Found this absolute dream of a butterfly print Y2K baby tee on Depop for just $18!
+Try 4: Found this absolute dream of a Y2K baby tee with the cutest butterfly print on Depop for just $18!
+Try 5: Found this absolute dream of a butterfly print Y2K baby tee on Depop for just $18!
+```
 
 ---
 
 ## Loop Trace
 
-<!-- One full run, printed step by step, with the MCP call visible in it.
-
-     `python app.py ask '...' --trace` once you've added the trace.step()
-     calls in Milestone 2.
-
-     Worth pasting BOTH the happy path and the empty-search path. The empty
-     one should be visibly shorter, because it stops. If your two traces are
-     the same length, your branch isn't working — and this is the fastest way
-     anyone will ever find that out. -->
+I recorded each step in `agent.py::run_agent`. I ran both paths with `python app.py ask '...' --trace` and saved the terminal output in [loop_trace.txt](results/loop_trace.txt). Each model call includes its full inputs and response. Search shows a short list summary; the JSON log keeps the full returned listings.
 
 **Happy path**
 
-```
+```text
+$ python app.py ask 'vintage graphic tee under $30' --trace
 
+[1] parse query
+      in:  vintage graphic tee under $30
+      out: {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+      →    Use the parsed filters for search.
+[2] search_listings (via MCP)
+      in:  {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+      out: 6 items: Y2K Baby Tee — Butterfly Print, Vintage Band Tee — Faded Grey, Graphic Tee — 2003 Tour Bootleg Style … +3 more
+[3] select first result
+      out: Y2K Baby Tee — Butterfly Print ($18.0, depop)
+      →    Keep lst_002 in the session for both model tools.
+[4] suggest_outfit
+      in:  {'new_item': {'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'description': 'Super cute early 2000s baby tee with butterfly graphic. Fitted crop length. Tag says medium but fits like a small.', 'category': 'tops', 'style_tags': ['y2k', 'vintage', 'graphic tee', 'cottagecore'], 'size': 'S/M', 'condition': 'excellent', 'price': 18.0, 'colors': ['white', 'pink', 'purple'], 'brand': None, 'platform': 'depop'}, 'wardrobe': {'items': [{'id': 'w_001', 'name': 'Baggy straight-leg jeans, dark wash', 'category': 'bottoms', 'colors': ['dark blue', 'indigo'], 'style_tags': ['denim', 'streetwear', 'baggy'], 'notes': 'High-waisted, sits above the hip'}, {'id': 'w_002', 'name': 'Wide-leg khaki trousers', 'category': 'bottoms', 'colors': ['khaki', 'tan'], 'style_tags': ['earth tones', 'minimal', 'wide-leg'], 'notes': None}, {'id': 'w_003', 'name': 'White ribbed tank top', 'category': 'tops', 'colors': ['white'], 'style_tags': ['basics', 'minimal', 'fitted'], 'notes': 'Goes with everything'}, {'id': 'w_004', 'name': 'Oversized grey crewneck sweatshirt', 'category': 'tops', 'colors': ['grey', 'charcoal'], 'style_tags': ['oversized', 'basics', 'cozy'], 'notes': 'Really oversized — drops below the hip'}, {'id': 'w_005', 'name': 'Black cropped zip hoodie', 'category': 'tops', 'colors': ['black'], 'style_tags': ['athletic', 'streetwear', 'cropped'], 'notes': None}, {'id': 'w_006', 'name': 'Vintage black denim jacket', 'category': 'outerwear', 'colors': ['black'], 'style_tags': ['denim', 'vintage', 'classic'], 'notes': 'Slightly cropped'}, {'id': 'w_007', 'name': 'Chunky white sneakers', 'category': 'shoes', 'colors': ['white'], 'style_tags': ['sneakers', 'chunky', 'streetwear'], 'notes': None}, {'id': 'w_008', 'name': 'Black combat boots', 'category': 'shoes', 'colors': ['black'], 'style_tags': ['boots', 'grunge', 'classic'], 'notes': 'Lace-up, mid-ankle height'}, {'id': 'w_009', 'name': 'Brown leather belt', 'category': 'accessories', 'colors': ['brown'], 'style_tags': ['classic', 'earth tones', 'accessories'], 'notes': None}, {'id': 'w_010', 'name': 'Black crossbody bag', 'category': 'accessories', 'colors': ['black'], 'style_tags': ['minimal', 'accessories', 'everyday'], 'notes': None}]}}
+      out: Outfit 1: Pair the Y2K Baby Tee — Butterfly Print with the Baggy straight-leg jeans, dark wash for a classic noughties contrast. Complete the look with the Chunky white sneakers and the Black crossbody bag for an effortless everyday ensemble.
+
+Outfit 2: Layer the Y2K Baby Tee — Butterfly Print underneath the Vintage black denim jacket for an edgy vintage vibe. Pair them with the Wide-leg khaki trousers and the Black combat boots to anchor the pastel graphic top with structured pieces.
+      →    Pass the outfit and the same item to create_fit_card.
+[5] create_fit_card
+      in:  {'outfit': 'Outfit 1: Pair the Y2K Baby Tee — Butterfly Print with the Baggy straight-leg jeans, dark wash for a classic noughties contrast. Complete the look with the Chunky white sneakers and the Black crossbody bag for an effortless everyday ensemble.\n\nOutfit 2: Layer the Y2K Baby Tee — Butterfly Print underneath the Vintage black denim jacket for an edgy vintage vibe. Pair them with the Wide-leg khaki trousers and the Black combat boots to anchor the pastel graphic top with structured pieces.', 'new_item': {'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'description': 'Super cute early 2000s baby tee with butterfly graphic. Fitted crop length. Tag says medium but fits like a small.', 'category': 'tops', 'style_tags': ['y2k', 'vintage', 'graphic tee', 'cottagecore'], 'size': 'S/M', 'condition': 'excellent', 'price': 18.0, 'colors': ['white', 'pink', 'purple'], 'brand': None, 'platform': 'depop'}}
+      out: Tuck this Y2K baby tee into baggy dark-wash denim for that classic noughties contrast. I’m listing this butterfly print piece on Depop for $18. Grab it before someone else does!
+      →    All three tools finished; return the session.
+
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   Outfit 1: Pair the Y2K Baby Tee — Butterfly Print with the Baggy straight-leg jeans, dark wash for a classic noughties contrast. Complete the look with the Chunky white sneakers and the Black crossbody bag for an effortless everyday ensemble.
+
+Outfit 2: Layer the Y2K Baby Tee — Butterfly Print underneath the Vintage black denim jacket for an edgy vintage vibe. Pair them with the Wide-leg khaki trousers and the Black combat boots to anchor the pastel graphic top with structured pieces.
+
+  Fit card: Tuck this Y2K baby tee into baggy dark-wash denim for that classic noughties contrast. I’m listing this butterfly print piece on Depop for $18. Grab it before someone else does!
+
+1 model calls this session, 1 served from cache, 234 prompt + 44 output tokens
 ```
 
 **Empty search**
 
+```text
+$ python app.py ask 'designer ballgown size XXS under $5' --trace
+
+[1] parse query
+      in:  designer ballgown size XXS under $5
+      out: {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      →    Use the parsed filters for search.
+[2] search_listings (via MCP)
+      in:  {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      out: [] (empty)
+[3] empty-search branch
+      out: No listings matched 'designer ballgown' in size XXS under $5. To find something: use fewer or different words for the item (like 'graphic tee' or 'denim jacket'); or try a size other than XXS, or leave the size out; or raise your max price above $5.
+      →    No item to pass on; stop before suggest_outfit.
+
+  No listings matched 'designer ballgown' in size XXS under $5. To find something: use fewer or different words for the item (like 'graphic tee' or 'denim jacket'); or try a size other than XXS, or leave the size out; or raise your max price above $5.
+
+0 model calls this session
 ```
 
+**On the MCP move:** I registered only `search_listings` in `mcp_server.py` and replaced the direct search call with `mcp_client.call_tool` in `run_agent`. I ran `python mcp_client.py` as a separate client and saw the tool, its description, and its typed inputs. I compared an MCP search for `graphic tee`, size `M`, max price `30` with the direct function: both returned the same two listing dictionaries. The other two tools still call the model directly through the existing adapter.
+
+**Deliberate failures**
+
+I saved the full output in [failure_modes.txt](results/failure_modes.txt).
+
+I triggered empty search with `designer ballgown size XXS under $5`. It stopped before the second tool and told me to change the words, size, or price.
+
+```text
+No listings matched 'designer ballgown' in size XXS under $5. To find something: use fewer or different words for the item (like 'graphic tee' or 'denim jacket'); or try a size other than XXS, or leave the size out; or raise your max price above $5.
 ```
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+I triggered empty wardrobe with `denim jacket under $50` and an empty wardrobe, the same input as `--empty-wardrobe`. The existing empty-wardrobe handler returned advice instead of crashing. I could try the suggested basics or add my own clothes to the wardrobe.
 
+```text
+Outfit 1: Pair the cropped denim jacket with high-waisted black skinny jeans and a tucked-in white crewneck t-shirt. Finish the look with classic white canvas sneakers for a casual, everyday vibe.
 
+Outfit 2: Layer the light wash jacket over a fitted black midi dress for a balanced mix of casual and chic. Complete the outfit with comfortable black leather ankle boots.
+```
+
+I triggered model unavailable by changing one character of the key in a child process environment. I used the new query `vintage graphic tee under $29.81` and turned cache off. I kept `.env` intact. It made one real model call, stopped without a stack trace, and told me to check the key and connection. I added a `ModelUnavailable` handler around each model tool so the message names which step failed.
+
+```text
+The outfit model is unavailable. The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com. Check your API key and connection, then try again.
+```
 
 ---
 
 ## The Improvement
 
-<!-- What you changed, why your diagnosis pointed at it, and the after-run in
-     the same table format. One change, measured properly.
+**What I changed:** I changed only the caption prompt in `tools.py::create_fit_card`. I asked it to begin with a concrete styling detail from the outfit and avoid the repeated shopping phrases. I kept the same item facts, length request, model, temperature, data, and scenarios.
 
-     `python run_eval.py --label after` -->
-
-**What I changed:**
-
-**Which failure it was meant to fix:**
+**Which failure it was meant to fix:** I wanted the model to stop repeating the first sentence in criterion 4. I did not add retries, change the search, or change the targets.
 
 ### Run Log — After
 
+I ran `python run_eval.py --label after` with the same 45 attempts and cache off. The log recorded another 80 real model calls.
+
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Impossible query stops before suggest_outfit | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Same item reaches both model tools | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card facts, length, and different openings | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. All five queries keep the typed size and budget | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Did it help, and how do I know:**
+I saved the complete after sessions in [run_2026-10-13_1958_after.json](results/run_2026-10-13_1958_after.json) and the readable output in [run_2026-10-13_1958_after.md](results/run_2026-10-13_1958_after.md).
 
-<!-- If it made things worse, say that. Honestly reported, that earns full
-     credit and is more interesting than one that worked. -->
+**Criterion 1, try 1** — `agent.py::run_agent`
 
+Query: `vintage graphic tee under $30`
 
+```text
+Tool order: ['search_listings', 'suggest_outfit', 'create_fit_card']
+Tucked into baggy straight-leg jeans with chunky white sneakers, this butterfly print Y2K baby tee brings major early-2000s mallrat energy to the street. Snagged this piece for eighteen bucks on Depop and I am never taking it off.
+```
+
+**Criterion 2, try 1** — `agent.py::run_agent`
+
+Query: `designer ballgown size XXS under $5`
+
+```text
+No listings matched 'designer ballgown' in size XXS under $5. To find something: use fewer or different words for the item (like 'graphic tee' or 'denim jacket'); or try a size other than XXS, or leave the size out; or raise your max price above $5.
+Tool order: ['search_listings']
+fit_card: None
+```
+
+**Criterion 3, try 1** — `agent.py::run_agent`
+
+Query: `vintage graphic tee under $30`
+
+```text
+search_results[0].id: lst_002
+selected_item.id: lst_002
+suggest_outfit item_id: lst_002
+create_fit_card item_id: lst_002
+```
+
+**Criterion 4, try 1** — `agent.py::run_agent`
+
+Query: `vintage graphic tee under $30`
+
+```text
+Cinch your waist with a brown leather belt over wide-leg khaki trousers, then layer a black cropped zip hoodie for an edgy touch. This butterfly print Y2K baby tee ties the whole vibe together. Grab it on Depop for just $18 before someone else does!
+```
+
+**Criterion 5, try 1** — `agent.py::run_agent`
+
+Query: `vintage graphic tee under $30`
+
+```text
+vintage graphic tee under $30
+parsed: {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+search_results (id, size, price): [('lst_002', 'S/M', 18.0), ('lst_033', 'L', 19.0), ('lst_006', 'L', 24.0), ('lst_015', 'L', 26.0), ('lst_012', 'XL (fits oversized)', 20.0), ('lst_017', 'S/M', 15.0)]
+90s track jacket in size M
+parsed: {'description': '90s track jacket', 'size': 'M', 'max_price': None}
+search_results (id, size, price): [('lst_004', 'M', 45.0), ('lst_022', 'M', 75.0)]
+platform sneakers size 8
+parsed: {'description': 'platform sneakers', 'size': '8', 'max_price': None}
+search_results (id, size, price): [('lst_019', 'US 8', 48.0)]
+denim jacket under $50
+parsed: {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+search_results (id, size, price): [('lst_007', 'S', 42.0)]
+vintage tee size S under $20
+parsed: {'description': 'vintage tee', 'size': 'S', 'max_price': 20.0}
+search_results (id, size, price): [('lst_002', 'S/M', 18.0)]
+```
+
+**Before and after**
+
+| Criterion | Before | After |
+|---|---|---|
+| 1 | 5/5 | 5/5 |
+| 2 | 5/5 | 5/5 |
+| 3 | 5/5 | 5/5 |
+| 4 | 1/5 | 5/5 |
+| 5 | 5/5 | 5/5 |
+
+**After-run opening sentences**
+
+```text
+Try 1: Cinch your waist with a brown leather belt over wide-leg khaki trousers, then layer a black cropped zip hoodie for an edgy touch.
+Try 2: Throwing on baggy dark-wash jeans instantly nails that classic 2000s silhouette with this Y2K Baby Tee — Butterfly Print.
+Try 3: Layering this butterfly print Y2K baby tee under a black cropped zip hoodie gives off such an edgy contrast.
+Try 4: Cinch this Y2K Baby Tee with baggy dark-wash denim and chunky white sneakers for the ultimate noughties mall-rat aesthetic.
+Try 5: Tuck this Y2K Baby Tee with the butterfly print into wide-leg khaki trousers and pull on black combat boots for an edgy, textured contrast.
+```
+
+**Did it help, and how do I know:** It helped in this test. Criterion 4 went from MISSED (1/5 unique openings) to MET (5/5), with the price, platform, sentence count, and word count still passing. The other four criteria stayed at 5/5. I made one prompt change between the two runs. Five tries show improvement here, but they do not prove the model will never repeat itself.
 
 ---
 
 ## What's Still Broken
 
-<!-- For each criterion still missed: what you'd do, and why you stopped where
-     you did. "I ran out of time" is fine if it's true. Pretending nothing is
-     left is not. -->
+I have no remaining missed criteria in the after run. I still saw a problem my criteria do not measure: after-run caption 2 says “I'm listing this butterfly tee,” and caption 4 says “DM to claim yours.” The input never said I was selling the item. Next I would make the buyer voice clear in the prompt and test that claim. I stopped here because this unit asks for one measured improvement. I would also test more items and more runs before trusting the opening variation on new inputs.
 
 
 
