@@ -229,6 +229,9 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
         "Two to four sentences, under 60 words. Mention the item, the price and "
         "the platform once each, and be specific about the vibe of one outfit. "
         "Sound like a real post, not a product description. No hashtags. "
+        "Begin with a concrete styling detail from the outfit, using your own "
+        "wording. Avoid shopping openers such as 'Found', 'Scored', "
+        "'Obsessed', 'absolute dream', or 'absolute gem'. "
         "Return only the caption."
     )
     return generate(prompt)
