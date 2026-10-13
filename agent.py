@@ -15,7 +15,8 @@ Build and test your three tools in `tools.py` first. Then come here.
 
 import config
 import trace
-from tools import search_listings, suggest_outfit, create_fit_card
+from tools import suggest_outfit, create_fit_card
+from mcp_client import call_tool
 from generate import ModelUnavailable
 
 
@@ -141,12 +142,14 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                 "size": size,
                 "max_price": max_price,
             }
+            trace.step("parse query", inputs=query, returned=repr(session["parsed"]),
+                       note="Use the parsed filters for search.")
 
         elif not session["steps"]:
             parsed = session["parsed"]
-            session["search_results"] = search_listings(
-                parsed["description"], parsed["size"], parsed["max_price"]
-            )
+            session["search_results"] = call_tool("search_listings", dict(parsed))
+            trace.step("search_listings (via MCP)", inputs=repr(parsed),
+                       returned=session["search_results"])
             session["steps"].append({
                 "tool": "search_listings",
                 "inputs": dict(parsed),
@@ -166,19 +169,38 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                     + (f" under ${parsed['max_price']:g}" if parsed["max_price"] is not None else "")
                     + ". To find something: " + "; or ".join(tips) + "."
                 )
+                trace.step("empty-search branch", returned=session["error"],
+                           note="No item to pass on; stop before suggest_outfit.")
 
         elif session["selected_item"] is None:
             session["selected_item"] = session["search_results"][0]
+            trace.step("select first result", returned=session["selected_item"],
+                       note=f"Keep {session['selected_item']['id']} in the session for both model tools.")
 
         elif session["outfit_suggestion"] is None:
             item = session["selected_item"]
-            session["outfit_suggestion"] = suggest_outfit(item, session["wardrobe"])
+            inputs = {"new_item": item, "wardrobe": session["wardrobe"]}
+            try:
+                session["outfit_suggestion"] = suggest_outfit(item, session["wardrobe"])
+            except ModelUnavailable as exc:
+                session["error"] = f"The outfit model is unavailable. {exc} Check your API key and connection, then try again."
+                trace.step("suggest_outfit", inputs=repr(inputs), returned=session["error"], note="Stop: model unavailable.")
+                return session
             session["steps"].append({"tool": "suggest_outfit", "item_id": item["id"]})
+            trace.step("suggest_outfit", inputs=repr(inputs), returned=session["outfit_suggestion"],
+                       note="Use general styling advice because the wardrobe is empty." if not session["wardrobe"].get("items") else "Pass the outfit and the same item to create_fit_card.")
 
         else:
             item = session["selected_item"]
-            session["fit_card"] = create_fit_card(session["outfit_suggestion"], item)
+            inputs = {"outfit": session["outfit_suggestion"], "new_item": item}
+            try:
+                session["fit_card"] = create_fit_card(session["outfit_suggestion"], item)
+            except ModelUnavailable as exc:
+                session["error"] = f"The fit-card model is unavailable. {exc} Check your API key and connection, then try again."
+                trace.step("create_fit_card", inputs=repr(inputs), returned=session["error"], note="Stop: model unavailable.")
+                return session
             session["steps"].append({"tool": "create_fit_card", "item_id": item["id"]})
+            trace.step("create_fit_card", inputs=repr(inputs), returned=session["fit_card"], note="All three tools finished; return the session.")
 
     return session
 

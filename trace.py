@@ -87,8 +87,8 @@ def _short(value, limit: int = 110) -> str:
         keys = ", ".join(list(value)[:6])
         return f"dict with keys: {keys}"
 
-    text = str(value).replace("\n", " ")
-    return text if len(text) <= limit else text[:limit] + "…"
+    # Keep complete tool inputs and model responses as testing evidence.
+    return str(value)
 
 
 def check_iterations(count: int) -> None:

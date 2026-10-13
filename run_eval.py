@@ -30,6 +30,7 @@ mode — caching is what usually explains it.
 
 import argparse
 import datetime as dt
+import json
 import sys
 import traceback
 
@@ -202,6 +203,10 @@ def write_report(rows, args):
                 lines += ["Trace:", "", "```", record["trace"], "```", ""]
 
     path.write_text("\n".join(lines), encoding="utf-8")
+    # Keep complete sessions so state and every search filter can be checked.
+    path.with_suffix(".json").write_text(
+        json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     import generate
 
